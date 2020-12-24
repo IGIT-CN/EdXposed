@@ -20,15 +20,18 @@ jboolean Java_lab_galaxy_yahfa_HookMain_backupAndHookNative(JNIEnv *env, jclass 
 void Java_lab_galaxy_yahfa_HookMain_ensureMethodCached(JNIEnv *env, jclass clazz,
                                                        jobject hook,
                                                        jobject backup);
-
-void setNonCompilable(void *method);
-
-bool setNativeFlag(void *method, bool isNative);
-
-static void *getResolvedMethodsAddr(JNIEnv *, jobject);
-
 #ifdef __cplusplus
 }
 #endif
+void setNonCompilable(void *method);
+
+void *getArtMethod(JNIEnv *env, jobject jmethod);
+
+// TODO: move to common utils instead of in YAHFA's code
+void *getEntryPoint(void* method);
+
+// get original entrypoint from target ArtMethod
+void *getOriginalEntryPointFromTargetMethod(void* method);
+
 
 #endif // HOOK_MAIN_H

@@ -5,8 +5,12 @@
 
 namespace edxp {
 
-    bool IsClassPending(const char *);
+    bool IsClassPending(void *);
 
     void RegisterPendingHooks(JNIEnv *);
+
+    bool isHooked(void* art_method);
+
+    void recordHooked(void* art_method);
 
 } // namespace edxp

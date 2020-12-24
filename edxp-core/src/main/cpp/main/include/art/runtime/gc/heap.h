@@ -5,6 +5,7 @@
 #include "collector/gc_type.h"
 #include "gc_cause.h"
 #include "../thread.h"
+#include "../runtime.h"
 
 namespace art {
 
@@ -22,14 +23,6 @@ namespace art {
                 return art::gc::collector::GcType::kGcTypeNone;
             }
 
-            CREATE_HOOK_STUB_ENTRIES(void, PreZygoteFork, void *thiz) {
-                if (instance_)
-                    instance_->Reset(thiz);
-                else
-                    instance_ = new Heap(thiz);
-                PreZygoteForkBackup(thiz);
-            }
-
         public:
             Heap(void *thiz) : HookedObject(thiz) {}
 
@@ -37,8 +30,49 @@ namespace art {
                 return instance_;
             }
 
+            // @ApiSensitive(Level.MIDDLE)
             static void Setup(void *handle, HookFunType hook_func) {
-                HOOK_FUNC(PreZygoteFork, "_ZN3art2gc4Heap13PreZygoteForkEv");
+                int api_level = edxp::GetAndroidApiLevel();
+                size_t OFFSET_heap;  // Get offset from art::Runtime::RunRootClinits() call in IDA
+                switch (api_level) {
+                    case __ANDROID_API_O__:
+                        [[fallthrough]];
+                    case __ANDROID_API_O_MR1__:
+                        if constexpr(edxp::is64) {
+                            OFFSET_heap = 0x180;
+                        } else {
+                            OFFSET_heap = 0xF4;
+                        }
+                        break;
+                    case __ANDROID_API_P__:
+                        if constexpr(edxp::is64) {
+                            OFFSET_heap = 0x1C0;
+                        } else {
+                            OFFSET_heap = 0x128;
+                        }
+                        break;
+                    case __ANDROID_API_Q__:
+                        if constexpr(edxp::is64) {
+                            OFFSET_heap = 0x190;
+                        } else {
+                            OFFSET_heap = 0xF0;
+                        }
+                        break;
+                    default:
+                        LOGE("No valid offset for art::Runtime::heap_ found. Using Android R.");
+                        [[fallthrough]];
+                    case __ANDROID_API_R__:
+                        if constexpr(edxp::is64) {
+                            OFFSET_heap = 392;
+                        } else {
+                            OFFSET_heap = 236;
+                        }
+                        break;
+                }
+                void *thiz = *reinterpret_cast<void **>(
+                        reinterpret_cast<size_t>(Runtime::Current()->Get()) + OFFSET_heap);
+                LOGD("art::runtime::Heap object: %p", thiz);
+                instance_ = new Heap(thiz);
                 RETRIEVE_FUNC_SYMBOL(WaitForGcToComplete,
                                      "_ZN3art2gc4Heap19WaitForGcToCompleteENS0_7GcCauseEPNS_6ThreadE");
             }

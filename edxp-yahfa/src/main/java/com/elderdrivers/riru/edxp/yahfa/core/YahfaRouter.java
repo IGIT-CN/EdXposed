@@ -8,6 +8,11 @@ import com.elderdrivers.riru.edxp.yahfa.dexmaker.DynamicBridge;
 
 public class YahfaRouter extends BaseRouter {
 
+    YahfaRouter() {
+        // TODO: disable for better performance
+        useXposedApi = true;
+    }
+
     public void onEnterChildProcess() {
         DynamicBridge.onForkPost();
     }
